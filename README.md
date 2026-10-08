@@ -3,6 +3,8 @@
 Gerador de prompts técnicos (em inglês) para Google Flow e IAs de vídeo.
 
 ## Recursos
+- Tela inicial com Modo Fácil, Abrir prompt, Início Rápido, Sobre e Configurações
+- Página Sobre: desenvolvedor, doação via Pix, últimas modificações e backup
 - Personagens salvos (aparência/roupa) reutilizáveis em todas as cenas
 - Campo de ação durante a fala, idioma da fala e contador de duração
 - Sincronia labial e "sem legendas" incluídos automaticamente no prompt
