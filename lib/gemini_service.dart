@@ -5,15 +5,15 @@ import 'package:http/http.dart' as http;
 
 const String geminiBase = 'https://generativelanguage.googleapis.com/v1beta';
 
-/// Modelo padrão: Flash-Lite, listado como gratuito na página de preços
-/// do Gemini API (conferida em out/2026). Pode ser trocado nas opções.
-const String defaultModel = 'gemini-3.5-flash-lite';
+/// Modelo padrão: atalho que aponta para o Flash mais recente (o mesmo
+/// usado no exemplo do AI Studio). Pode ser trocado nas opções.
+const String defaultModel = 'gemini-flash-latest';
 
 const List<String> suggestedModels = [
+  'gemini-flash-latest',
   'gemini-3.5-flash-lite',
   'gemini-3.8-flash',
   'gemini-3.7-flash',
-  'gemini-3.1-flash-lite',
 ];
 
 const String apiKeyUrl = 'https://aistudio.google.com/apikey';

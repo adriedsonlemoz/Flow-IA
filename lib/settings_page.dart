@@ -286,8 +286,9 @@ class _SettingsPageState extends State<SettingsPage> {
           _Steps([
             'O plano gratuito cobre modelos da família Flash (e Flash-Lite). '
                 'Modelos Pro, de imagem e de vídeo não são gratuitos.',
-            'O padrão é o gemini-3.5-flash-lite. Se o Google trocar os '
-                'modelos, use "Testar" para listar os que sua chave aceita.',
+            'O padrão é o gemini-flash-latest, atalho que aponta para o '
+                'Flash mais recente (os limites podem mudar junto com ele). '
+                'Use "Testar" para listar os modelos que sua chave aceita.',
             'Na página de preços do Google você confere quais modelos têm '
                 'camada gratuita.',
           ]),
