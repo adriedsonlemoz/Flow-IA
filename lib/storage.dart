@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/material.dart' show ThemeMode;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'gemini_service.dart';
@@ -14,6 +15,7 @@ class Storage {
   static const _usageDateKey = 'usage_date';
   static const _usageCountKey = 'usage_count';
   static const _learnedLimitKey = 'learned_limit';
+  static const _themeKey = 'theme_mode';
 
   Future<SharedPreferences> get _prefs => SharedPreferences.getInstance();
 
@@ -72,6 +74,25 @@ class Storage {
   Future<void> saveModel(String model) async {
     final prefs = await _prefs;
     await prefs.setString(_modelKey, model);
+  }
+
+  // --- Tema (Claro, Automático ou Escuro) ---
+
+  Future<ThemeMode> loadThemeMode() async {
+    final prefs = await _prefs;
+    switch (prefs.getString(_themeKey)) {
+      case 'light':
+        return ThemeMode.light;
+      case 'system':
+        return ThemeMode.system;
+      default:
+        return ThemeMode.dark;
+    }
+  }
+
+  Future<void> saveThemeMode(ThemeMode mode) async {
+    final prefs = await _prefs;
+    await prefs.setString(_themeKey, mode.name);
   }
 
   // --- Contador local de uso da IA (aproximado) ---

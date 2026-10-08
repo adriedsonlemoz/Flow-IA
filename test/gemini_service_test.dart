@@ -68,4 +68,19 @@ void main() {
 
     expect(result, ['gemini-3.5-flash-lite', 'gemini-3.8-flash']);
   });
+
+  test('modelo sugerido vem primeiro na lista', () {
+    final available = [
+      'gemini-3.8-flash',
+      'gemini-flash-latest',
+      'gemini-3.5-flash-lite',
+    ];
+
+    expect(recommendedModel(available), 'gemini-flash-latest');
+    expect(orderModels(available).first, 'gemini-flash-latest');
+    expect(orderModels(available).length, 3);
+    final other = ['gemini-3.8-flash', 'x-flash'];
+    expect(recommendedModel(other), 'gemini-3.8-flash');
+    expect(recommendedModel([]), defaultModel);
+  });
 }

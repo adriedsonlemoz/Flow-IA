@@ -149,6 +149,24 @@ List<String> flashModels(List<String> all) {
   ];
 }
 
+/// Escolhe o modelo sugerido para a chave entre os [available].
+String recommendedModel(List<String> available) {
+  for (final m in suggestedModels) {
+    if (available.contains(m)) return m;
+  }
+  return available.isEmpty ? defaultModel : available.first;
+}
+
+/// Ordena a lista deixando o modelo sugerido em primeiro lugar.
+List<String> orderModels(List<String> available) {
+  final suggested = recommendedModel(available);
+  final rest = [
+    for (final m in available)
+      if (m != suggested) m,
+  ]..sort();
+  return [suggested, ...rest];
+}
+
 String _cleanOutput(String text) {
   var t = text.trim();
   if (t.startsWith('```')) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'app_theme.dart';
 import 'gemini_service.dart';
 import 'links.dart';
 import 'storage.dart';
@@ -15,13 +16,15 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   final _storage = Storage();
   final _keyController = TextEditingController();
-  final _modelController = TextEditingController();
 
   bool _hideKey = true;
   bool _busy = false;
   int _usage = 0;
   String _learned = '';
-  List<String> _available = [];
+  ThemeMode _themeMode = themeNotifier.value;
+  String _model = defaultModel;
+  List<String> _models = orderModels(suggestedModels);
+  String _suggestedForKey = '';
 
   @override
   void initState() {
@@ -32,8 +35,11 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   void dispose() {
     _keyController.dispose();
-    _modelController.dispose();
     super.dispose();
+  }
+
+  List<String> _ensure(List<String> list, String model) {
+    return list.contains(model) ? list : [model, ...list];
   }
 
   Future<void> _load() async {
@@ -44,7 +50,8 @@ class _SettingsPageState extends State<SettingsPage> {
     if (!mounted) return;
     setState(() {
       _keyController.text = key;
-      _modelController.text = model;
+      _model = model;
+      _models = _ensure(orderModels(suggestedModels), model);
       _usage = usage;
       _learned = learned;
     });
@@ -55,6 +62,12 @@ class _SettingsPageState extends State<SettingsPage> {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _setTheme(ThemeMode mode) async {
+    themeNotifier.value = mode;
+    setState(() => _themeMode = mode);
+    await _storage.saveThemeMode(mode);
   }
 
   Future<void> _paste() async {
@@ -69,10 +82,19 @@ class _SettingsPageState extends State<SettingsPage> {
     _toast('Chave colada. Toque em Salvar.');
   }
 
+  Future<void> _copyKey() async {
+    final key = _keyController.text.trim();
+    if (key.isEmpty) {
+      _toast('Não há chave para copiar.');
+      return;
+    }
+    await Clipboard.setData(ClipboardData(text: key));
+    _toast('Chave copiada.');
+  }
+
   Future<void> _save() async {
     await _storage.saveApiKey(_keyController.text.trim());
-    final model = _modelController.text.trim();
-    await _storage.saveModel(model.isEmpty ? defaultModel : model);
+    await _storage.saveModel(_model);
     _toast('Configurações salvas.');
   }
 
@@ -80,7 +102,7 @@ class _SettingsPageState extends State<SettingsPage> {
     await _storage.saveApiKey('');
     if (!mounted) return;
     setState(() => _keyController.clear());
-    _toast('Chave removida do aparelho.');
+    _toast('Chave excluída do aparelho.');
   }
 
   Future<void> _test() async {
@@ -91,11 +113,21 @@ class _SettingsPageState extends State<SettingsPage> {
     }
     setState(() => _busy = true);
     try {
-      final service = GeminiService(apiKey: key, model: _modelController.text);
+      final service = GeminiService(apiKey: key, model: _model);
       final models = await service.listModels();
+      final flash = flashModels(models);
       if (!mounted) return;
-      setState(() => _available = flashModels(models));
-      _toast('Chave válida! ${models.length} modelos encontrados.');
+      if (flash.isEmpty) {
+        _toast('Chave válida, mas nenhum modelo Flash foi encontrado.');
+        return;
+      }
+      final suggested = recommendedModel(flash);
+      setState(() {
+        _models = orderModels(flash);
+        _model = suggested;
+        _suggestedForKey = suggested;
+      });
+      _toast('Chave válida! Modelo sugerido: $suggested. Toque em Salvar.');
     } on GeminiException catch (e) {
       _toast(e.message);
     } finally {
@@ -104,20 +136,48 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _section(String title, List<Widget> children) {
-    return Card(
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
       margin: const EdgeInsets.only(bottom: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 12),
-            ...children,
-          ],
-        ),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: scheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 12),
+          ...children,
+        ],
       ),
     );
+  }
+
+  Widget _fieldIcon(String tooltip, IconData icon, VoidCallback onPressed) {
+    return IconButton(
+      tooltip: tooltip,
+      icon: Icon(icon),
+      visualDensity: VisualDensity.compact,
+      onPressed: onPressed,
+    );
+  }
+
+  Widget _appearanceSection() {
+    return _section('Aparência', [
+      SegmentedButton<ThemeMode>(
+        segments: const [
+          ButtonSegment(value: ThemeMode.light, label: Text('Claro')),
+          ButtonSegment(value: ThemeMode.system, label: Text('Automático')),
+          ButtonSegment(value: ThemeMode.dark, label: Text('Escuro')),
+        ],
+        selected: {_themeMode},
+        onSelectionChanged: (selection) => _setTheme(selection.first),
+      ),
+    ]);
   }
 
   Widget _keySection() {
@@ -129,43 +189,48 @@ class _SettingsPageState extends State<SettingsPage> {
         enableSuggestions: false,
         decoration: InputDecoration(
           labelText: 'Chave',
-          suffixIcon: IconButton(
-            tooltip: _hideKey ? 'Mostrar' : 'Ocultar',
-            icon: Icon(_hideKey ? Icons.visibility : Icons.visibility_off),
-            onPressed: () => setState(() => _hideKey = !_hideKey),
+          suffixIcon: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _fieldIcon('Colar', Icons.content_paste, _paste),
+              _fieldIcon('Copiar', Icons.copy_rounded, _copyKey),
+              _fieldIcon(
+                _hideKey ? 'Mostrar' : 'Ocultar',
+                _hideKey ? Icons.visibility : Icons.visibility_off,
+                () => setState(() => _hideKey = !_hideKey),
+              ),
+            ],
           ),
         ),
       ),
       const SizedBox(height: 12),
-      Wrap(
-        spacing: 8,
-        runSpacing: 8,
+      Row(
         children: [
-          FilledButton.tonalIcon(
-            onPressed: _paste,
-            icon: const Icon(Icons.content_paste),
-            label: const Text('Colar chave'),
+          Expanded(
+            child: FilledButton(
+              onPressed: _save,
+              child: const Text('Salvar'),
+            ),
           ),
-          FilledButton.icon(
-            onPressed: _save,
-            icon: const Icon(Icons.save_outlined),
-            label: const Text('Salvar'),
+          const SizedBox(width: 8),
+          Expanded(
+            child: OutlinedButton(
+              onPressed: _busy ? null : _test,
+              child: _busy
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Testar'),
+            ),
           ),
-          OutlinedButton.icon(
-            onPressed: _busy ? null : _test,
-            icon: _busy
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.wifi_tethering),
-            label: const Text('Testar'),
-          ),
-          TextButton.icon(
-            onPressed: _remove,
-            icon: const Icon(Icons.delete_outline),
-            label: const Text('Remover'),
+          const SizedBox(width: 8),
+          Expanded(
+            child: OutlinedButton(
+              onPressed: _remove,
+              child: const Text('Excluir'),
+            ),
           ),
         ],
       ),
@@ -174,44 +239,32 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Widget _modelSection() {
     return _section('Modelo de IA', [
-      TextField(
-        controller: _modelController,
-        autocorrect: false,
-        decoration: const InputDecoration(
-          labelText: 'Modelo',
-          helperText: 'Use um modelo Flash gratuito. Toque em Salvar.',
-        ),
-      ),
-      const SizedBox(height: 12),
-      const Text('Sugestões:'),
-      const SizedBox(height: 8),
-      Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: [
-          for (final m in suggestedModels)
-            ActionChip(
-              label: Text(m),
-              onPressed: () => setState(() => _modelController.text = m),
+      DropdownMenu<String>(
+        key: ValueKey('${_models.length}-$_model'),
+        expandedInsets: EdgeInsets.zero,
+        label: const Text('Modelo'),
+        leadingIcon: const Icon(Icons.auto_awesome),
+        initialSelection: _model,
+        requestFocusOnTap: false,
+        dropdownMenuEntries: [
+          for (final m in _models)
+            DropdownMenuEntry(
+              value: m,
+              label: m == _suggestedForKey ? '$m (sugerido)' : m,
             ),
         ],
+        onSelected: (m) {
+          if (m != null) setState(() => _model = m);
+        },
       ),
-      if (_available.isNotEmpty) ...[
-        const SizedBox(height: 16),
-        const Text('Disponíveis na sua chave (Flash):'),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final m in _available)
-              ActionChip(
-                label: Text(m),
-                onPressed: () => setState(() => _modelController.text = m),
-              ),
-          ],
-        ),
-      ],
+      const SizedBox(height: 8),
+      Text(
+        _suggestedForKey.isEmpty
+            ? 'Toque em Testar para listar os modelos da sua chave.'
+            : 'Sugerido para a sua chave: $_suggestedForKey. '
+                'Toque em Salvar para usar.',
+        style: Theme.of(context).textTheme.bodySmall,
+      ),
     ]);
   }
 
@@ -249,8 +302,8 @@ class _SettingsPageState extends State<SettingsPage> {
             'Toque em "Create API key" (Criar chave de API) e escolha ou '
                 'crie um projeto.',
             'Copie a chave gerada.',
-            'Volte aqui, toque em "Colar chave", depois em "Salvar" e em '
-                '"Testar".',
+            'Volte aqui, toque em Colar (ícone ao lado do olho), depois em '
+                '"Salvar" e em "Testar".',
           ]),
           Align(
             alignment: Alignment.centerLeft,
@@ -286,11 +339,10 @@ class _SettingsPageState extends State<SettingsPage> {
           _Steps([
             'O plano gratuito cobre modelos da família Flash (e Flash-Lite). '
                 'Modelos Pro, de imagem e de vídeo não são gratuitos.',
+            'Toque em "Testar": o app lista os modelos Flash da sua chave e '
+                'já seleciona o sugerido, que vem primeiro na lista.',
             'O padrão é o gemini-flash-latest, atalho que aponta para o '
-                'Flash mais recente (os limites podem mudar junto com ele). '
-                'Use "Testar" para listar os modelos que sua chave aceita.',
-            'Na página de preços do Google você confere quais modelos têm '
-                'camada gratuita.',
+                'Flash mais recente (os limites podem mudar junto com ele).',
           ]),
         ],
       ),
@@ -302,7 +354,8 @@ class _SettingsPageState extends State<SettingsPage> {
             'No plano gratuito, o Google pode usar o conteúdo enviado para '
                 'melhorar seus produtos. Não envie dados sensíveis.',
             'A chave fica salva só neste aparelho. Não a compartilhe nem a '
-                'coloque em repositórios públicos.',
+                'coloque em repositórios públicos ou em conversas.',
+            'Se a chave vazar, exclua-a no AI Studio e gere outra.',
           ]),
         ],
       ),
@@ -325,6 +378,7 @@ class _SettingsPageState extends State<SettingsPage> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            _appearanceSection(),
             _keySection(),
             _modelSection(),
             _usageSection(),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'app_theme.dart';
 import 'character_dialog.dart';
 import 'gemini_service.dart';
 import 'models.dart';
@@ -9,7 +10,9 @@ import 'scenes_page.dart';
 import 'settings_page.dart';
 import 'storage.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  themeNotifier.value = await Storage().loadThemeMode();
   runApp(const FlowIaApp());
 }
 
@@ -18,22 +21,18 @@ class FlowIaApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flow IA',
-      debugShowCheckedModeBanner: false,
-      themeMode: ThemeMode.dark,
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF7C4DFF),
-          brightness: Brightness.dark,
-        ),
-        inputDecorationTheme: const InputDecorationTheme(
-          border: OutlineInputBorder(),
-        ),
-      ),
-      home: const FlowIaPage(),
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: themeNotifier,
+      builder: (context, mode, _) {
+        return MaterialApp(
+          title: 'Flow IA',
+          debugShowCheckedModeBanner: false,
+          themeMode: mode,
+          theme: buildLightTheme(),
+          darkTheme: buildDarkTheme(),
+          home: const FlowIaPage(),
+        );
+      },
     );
   }
 }
