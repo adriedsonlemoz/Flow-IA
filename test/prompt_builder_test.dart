@@ -75,4 +75,22 @@ void main() {
     expect(countWords('uma duas  três'), 3);
     expect(estimateSeconds(23), 10);
   });
+
+  test('versão em português usa os termos e rótulos em português', () {
+    final prompt = buildPrompt(
+      context: 'Um apresentador em um estúdio',
+      dialogue: 'Olá',
+      voice: voiceOptions.first,
+      language: languageOptions.first,
+      lighting: lightingOptions.first,
+      camera: cameraOptions.first,
+      locale: PromptLocale.pt,
+    );
+
+    expect(prompt.startsWith('Mantendo a mesma aparência'), isTrue);
+    expect(prompt.contains("falando em português do Brasil: 'Olá'"), isTrue);
+    expect(prompt.contains('Voz: voz de narrador'), isTrue);
+    expect(prompt.contains('Lábios perfeitamente sincronizados'), isTrue);
+    expect(prompt.endsWith('Ultra detalhado, resolução 4k.'), isTrue);
+  });
 }

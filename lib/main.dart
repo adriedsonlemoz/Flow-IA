@@ -4,11 +4,13 @@ import 'package:flutter/services.dart';
 import 'app_theme.dart';
 import 'character_dialog.dart';
 import 'gemini_service.dart';
+import 'locale_toggle.dart';
 import 'models.dart';
 import 'prompt_builder.dart';
 import 'scenes_page.dart';
 import 'settings_page.dart';
 import 'storage.dart';
+import 'wizard_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -57,6 +59,7 @@ class _FlowIaPageState extends State<FlowIaPage> {
   PromptOption _camera = cameraOptions.first;
   PromptOption _lighting = lightingOptions[1];
 
+  PromptLocale _locale = PromptLocale.en;
   bool _improving = false;
   String? _improved;
   String? _improvedSource;
@@ -89,7 +92,7 @@ class _FlowIaPageState extends State<FlowIaPage> {
     setState(() => _characters = items);
   }
 
-  String get _prompt => buildPrompt(
+  String _build(PromptLocale locale) => buildPrompt(
         context: _contextController.text,
         dialogue: _dialogueController.text,
         action: _actionController.text,
@@ -98,7 +101,11 @@ class _FlowIaPageState extends State<FlowIaPage> {
         language: _language,
         lighting: _lighting,
         camera: _camera,
+        locale: locale,
       );
+
+  /// Prompt base em inglês (usado para melhorar com IA).
+  String get _prompt => _build(PromptLocale.en);
 
   void _toast(ScaffoldMessengerState messenger, String message) {
     messenger
@@ -198,6 +205,16 @@ class _FlowIaPageState extends State<FlowIaPage> {
     setState(() {
       _characters = items;
       _character = null;
+    });
+  }
+
+  void _openWizard() {
+    Navigator.push(
+      context,
+      MaterialPageRoute<void>(builder: (_) => const WizardPage()),
+    ).then((_) {
+      _loadCharacters();
+      _loadUsage();
     });
   }
 
@@ -412,6 +429,21 @@ class _FlowIaPageState extends State<FlowIaPage> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            FilledButton.icon(
+              onPressed: _openWizard,
+              icon: const Icon(Icons.auto_fix_high),
+              label: const Text('Criar com assistente (passo a passo)'),
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(52),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Ou preencha tudo de uma vez abaixo (modo rápido).',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 16),
             _characterRow(),
             const SizedBox(height: 16),
             TextField(
@@ -486,8 +518,13 @@ class _FlowIaPageState extends State<FlowIaPage> {
             ),
             const SizedBox(height: 24),
             Text(
-              'Prompt gerado (EN)',
+              'Prompt gerado',
               style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            LocaleToggle(
+              value: _locale,
+              onChanged: (l) => setState(() => _locale = l),
             ),
             const SizedBox(height: 8),
             Container(
@@ -499,7 +536,7 @@ class _FlowIaPageState extends State<FlowIaPage> {
                 border: Border.all(color: scheme.outlineVariant),
               ),
               child: SelectableText(
-                _prompt,
+                _build(_locale),
                 style: const TextStyle(
                   fontFamily: 'monospace',
                   fontSize: 13,
@@ -509,7 +546,7 @@ class _FlowIaPageState extends State<FlowIaPage> {
             ),
             const SizedBox(height: 16),
             FilledButton.icon(
-              onPressed: () => _copy(_prompt),
+              onPressed: () => _copy(_build(_locale)),
               icon: const Icon(Icons.copy_rounded),
               label: const Text('Copiar Prompt'),
               style: FilledButton.styleFrom(
@@ -522,7 +559,7 @@ class _FlowIaPageState extends State<FlowIaPage> {
             ),
             const SizedBox(height: 12),
             OutlinedButton.icon(
-              onPressed: () => _saveScene(_prompt),
+              onPressed: () => _saveScene(_build(_locale)),
               icon: const Icon(Icons.playlist_add),
               label: const Text('Salvar na lista de cenas'),
               style: OutlinedButton.styleFrom(

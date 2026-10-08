@@ -50,6 +50,14 @@ class Storage {
     return _save(_scenesKey, [for (final s in scenes) s.toJson()]);
   }
 
+  /// Adiciona uma cena à lista e devolve o total de cenas.
+  Future<int> addScene(SavedScene scene) async {
+    final scenes = await loadScenes();
+    scenes.add(scene);
+    await saveScenes(scenes);
+    return scenes.length;
+  }
+
   // --- Chave e modelo do Gemini ---
 
   Future<String> loadApiKey() async {
