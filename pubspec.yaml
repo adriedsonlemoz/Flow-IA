@@ -1,7 +1,7 @@
 name: flow_ia
 description: Flow IA - gerador de prompts técnicos para Google Flow e IAs de vídeo.
 publish_to: "none"
-version: 1.0.9+10
+version: 1.0.10+11
 
 environment:
   sdk: ">=3.3.0 <4.0.0"

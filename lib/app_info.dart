@@ -1,5 +1,5 @@
 /// Versão exibida no app (deve ser igual à do pubspec.yaml; há um teste).
-const String appVersion = '1.0.9';
+const String appVersion = '1.0.10';
 
 const String developerName = 'Adriedson Aparecido Lemos';
 const String channelName = 'UaiNao PareceReal';
@@ -20,6 +20,12 @@ class ChangelogEntry {
 }
 
 const List<ChangelogEntry> changelog = [
+  ChangelogEntry('1.0.10', [
+    'Sugestões de personagens (pessoas, ETs, animais, frutas e objetos), '
+        'com roupas e acessórios, já em inglês e em português.',
+    'Listas de sugestões com busca para cenário, ação e fala.',
+    'Mais opções de voz, câmera e iluminação.',
+  ]),
   ChangelogEntry('1.0.9', [
     'Nova tela inicial: Modo Fácil, Abrir prompt e Início Rápido.',
     'Página Sobre com doação, últimas modificações e backup.',

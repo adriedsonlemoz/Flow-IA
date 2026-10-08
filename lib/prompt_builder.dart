@@ -44,6 +44,46 @@ const List<PromptOption> voiceOptions = [
     'voz grave cinematográfica, dramática e ressonante, estilo trailer',
   ),
   PromptOption(
+    'Feminina Suave',
+    'soft, warm and soothing female voice',
+    'voz feminina suave, calorosa e tranquilizadora',
+  ),
+  PromptOption(
+    'Masculina Rouca',
+    'deep, raspy male voice with strong character',
+    'voz masculina grave e rouca, com muita personalidade',
+  ),
+  PromptOption(
+    'Locutor de Rádio',
+    'smooth radio announcer voice, warm and engaging',
+    'voz de locutor de rádio, calorosa e envolvente',
+  ),
+  PromptOption(
+    'Sussurrada',
+    'soft whispering voice, intimate and mysterious',
+    'voz sussurrada, íntima e misteriosa',
+  ),
+  PromptOption(
+    'Robótica',
+    'robotic synthetic voice with a metallic tone',
+    'voz robótica sintética de tom metálico',
+  ),
+  PromptOption(
+    'Alienígena Engraçada',
+    'funny high-pitched alien voice, playful and quirky',
+    'voz de alienígena engraçada e aguda, brincalhona e peculiar',
+  ),
+  PromptOption(
+    'Épica de Herói',
+    'epic heroic voice, powerful and inspiring',
+    'voz épica de herói, poderosa e inspiradora',
+  ),
+  PromptOption(
+    'Cômica de Desenho',
+    'exaggerated cartoon voice, comedic and expressive',
+    'voz exagerada de desenho animado, cômica e expressiva',
+  ),
+  PromptOption(
     silentLabel,
     'no voice, no spoken dialogue, ambient sound only',
     'sem voz, sem diálogo falado, apenas som ambiente',
@@ -83,6 +123,51 @@ const List<PromptOption> cameraOptions = [
     'smooth tracking shot following the subject',
     'tracking shot suave acompanhando o personagem',
   ),
+  PromptOption(
+    'Close no Rosto',
+    'close-up shot on the face',
+    'close no rosto',
+  ),
+  PromptOption(
+    'Plano Aberto',
+    'wide establishing shot',
+    'plano aberto de apresentação',
+  ),
+  PromptOption(
+    'Câmera na Mão',
+    'handheld camera with subtle natural shake',
+    'câmera na mão com leve tremor natural',
+  ),
+  PromptOption(
+    'Inclinação para Cima',
+    'smooth tilt up',
+    'inclinação suave para cima',
+  ),
+  PromptOption(
+    'Dolly In',
+    'smooth dolly in toward the subject',
+    'dolly suave aproximando do personagem',
+  ),
+  PromptOption(
+    'Órbita ao Redor',
+    'slow orbiting shot around the subject',
+    'órbita lenta ao redor do personagem',
+  ),
+  PromptOption(
+    'Primeira Pessoa (POV)',
+    'first-person point of view shot',
+    'plano em primeira pessoa (POV)',
+  ),
+  PromptOption(
+    'Vista Aérea de Drone',
+    'aerial drone shot',
+    'vista aérea de drone',
+  ),
+  PromptOption(
+    'Ângulo Baixo',
+    'low angle shot looking up at the subject',
+    'ângulo baixo olhando para o personagem',
+  ),
 ];
 
 const List<PromptOption> lightingOptions = [
@@ -105,6 +190,46 @@ const List<PromptOption> lightingOptions = [
     'Suave/Profissional',
     'soft, even, professional lighting, clean look',
     'iluminação suave, uniforme e profissional, visual limpo',
+  ),
+  PromptOption(
+    'Golden Hour',
+    'warm golden hour sunlight, long soft shadows',
+    'luz dourada do fim de tarde, sombras longas e suaves',
+  ),
+  PromptOption(
+    'Noite com Luar',
+    'moonlit night, cool blue tones, soft shadows',
+    'noite de luar, tons azuis frios e sombras suaves',
+  ),
+  PromptOption(
+    'Contraluz',
+    'strong backlight with a glowing rim light',
+    'contraluz forte com brilho nas bordas',
+  ),
+  PromptOption(
+    'Luz de Velas',
+    'warm flickering candlelight',
+    'luz quente e trêmula de velas',
+  ),
+  PromptOption(
+    'Neon Colorido',
+    'colorful neon lights in pink and blue',
+    'luzes neon coloridas em rosa e azul',
+  ),
+  PromptOption(
+    'Dramática com Sombras',
+    'dramatic high-contrast lighting with deep shadows',
+    'iluminação dramática de alto contraste com sombras profundas',
+  ),
+  PromptOption(
+    'Dia Ensolarado',
+    'bright sunny daylight, vivid colors',
+    'luz do dia ensolarado, cores vivas',
+  ),
+  PromptOption(
+    'Névoa Misteriosa',
+    'soft diffused light through mist, mysterious mood',
+    'luz difusa através da névoa, clima misterioso',
   ),
 ];
 

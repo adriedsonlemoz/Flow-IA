@@ -3,6 +3,7 @@
 Gerador de prompts técnicos (em inglês) para Google Flow e IAs de vídeo.
 
 ## Recursos
+- Sugestões de personagens, roupas, cenários, ações e falas (lâmpada nos campos)
 - Tela inicial com Modo Fácil, Abrir prompt, Início Rápido, Sobre e Configurações
 - Página Sobre: desenvolvedor, doação via Pix, últimas modificações e backup
 - Personagens salvos (aparência/roupa) reutilizáveis em todas as cenas

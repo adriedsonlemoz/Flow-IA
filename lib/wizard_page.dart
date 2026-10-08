@@ -10,6 +10,8 @@ import 'models.dart';
 import 'prompt_builder.dart';
 import 'speech_counter.dart';
 import 'storage.dart';
+import 'suggest_field.dart';
+import 'suggestions.dart';
 
 const int _resultStep = 5;
 
@@ -90,10 +92,10 @@ class _WizardPageState extends State<WizardPage> {
   }
 
   String _build(PromptLocale locale) => buildPrompt(
-        context: _contextController.text,
+        context: localizeScene(_contextController.text, locale),
         dialogue: _dialogueController.text,
-        action: _actionController.text,
-        character: _character?.description ?? '',
+        action: localizeAction(_actionController.text, locale),
+        character: _character?.descriptionFor(locale) ?? '',
         voice: _voice,
         language: _language,
         lighting: _lighting,
@@ -270,7 +272,8 @@ class _WizardPageState extends State<WizardPage> {
   }
 
   Widget _characterStep() {
-    final description = _character?.description ?? '';
+    final description =
+        _character?.descriptionFor(PromptLocale.pt) ?? '';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -290,16 +293,14 @@ class _WizardPageState extends State<WizardPage> {
   }
 
   Widget _sceneStep() {
-    return TextField(
+    return SuggestField(
       controller: _contextController,
+      label: 'Contexto / Descrição Visual',
+      hint: 'Ex.: Um apresentador em um estúdio moderno...',
+      pickerTitle: 'Sugestões de cenário',
+      suggestions: sceneSuggestions,
       minLines: 4,
       maxLines: 8,
-      textCapitalization: TextCapitalization.sentences,
-      decoration: const InputDecoration(
-        labelText: 'Contexto / Descrição Visual',
-        hintText: 'Ex.: Um apresentador em um estúdio moderno...',
-        alignLabelWithHint: true,
-      ),
       onChanged: (_) => setState(() {}),
     );
   }
@@ -308,28 +309,25 @@ class _WizardPageState extends State<WizardPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TextField(
+        SuggestField(
           controller: _actionController,
+          label: 'Ação durante a fala',
+          hint: 'Ex.: aponta para a tela e sorri',
+          pickerTitle: 'Sugestões de ação',
+          suggestions: actionSuggestions,
           minLines: 1,
           maxLines: 3,
-          textCapitalization: TextCapitalization.sentences,
-          decoration: const InputDecoration(
-            labelText: 'Ação durante a fala',
-            hintText: 'Ex.: aponta para a tela e sorri',
-          ),
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: 16),
-        TextField(
+        SuggestField(
           controller: _dialogueController,
+          label: 'Falas / Diálogo / Narração',
+          hint: 'Ex.: Olá, bem-vindos ao nosso canal!',
+          pickerTitle: 'Sugestões de fala',
+          suggestions: speechSuggestions,
           minLines: 2,
           maxLines: 5,
-          textCapitalization: TextCapitalization.sentences,
-          decoration: const InputDecoration(
-            labelText: 'Falas / Diálogo / Narração',
-            hintText: 'Ex.: Olá, bem-vindos ao nosso canal!',
-            alignLabelWithHint: true,
-          ),
           onChanged: (_) => setState(() {}),
         ),
         SpeechCounter(text: _dialogueController.text),
