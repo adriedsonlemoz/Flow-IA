@@ -1,0 +1,80 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Generate Android platform files (if missing)
+        run: |
+          if [ ! -d android ]; then
+            flutter create . --project-name flow_ia --org com.flowia --platforms android
+            rm -f test/widget_test.dart
+          fi
+
+      - name: Set app name to Flow IA
+        run: |
+          sed -i 's/android:label="[^"]*"/android:label="Flow IA"/' android/app/src/main/AndroidManifest.xml
+
+      - name: Read app version
+        id: version
+        run: |
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: *//; s/+.*//')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Pub get
+        run: flutter pub get
+
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed lib test
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test
+
+      - name: Build APK (release)
+        run: flutter build apk --release
+
+      - name: Rename APK
+        run: cp build/app/outputs/flutter-apk/app-release.apk "Flowiav${{ steps.version.outputs.version }}.apk"
+
+      - name: Upload APK (artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Flowiav${{ steps.version.outputs.version }}
+          path: Flowiav${{ steps.version.outputs.version }}.apk
+          if-no-files-found: error
+
+      - name: Publish GitHub Release (keeps every version)
+        if: github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Flow IA v${{ steps.version.outputs.version }}
+          files: Flowiav${{ steps.version.outputs.version }}.apk
