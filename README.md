@@ -7,6 +7,7 @@ Gerador de prompts técnicos (em inglês) para Google Flow e IAs de vídeo.
 - Campo de ação durante a fala, idioma da fala e contador de duração
 - Sincronia labial e "sem legendas" incluídos automaticamente no prompt
 - Lista de cenas salva no aparelho (copiar uma ou todas)
+- "Melhorar com IA" (Gemini, plano gratuito): cole sua chave em Opções (engrenagem); o manual no app explica como obter a chave e conferir os limites
 
 ## Como rodar
 1. `flutter create . --project-name flow_ia --org com.flowia --platforms android,ios`

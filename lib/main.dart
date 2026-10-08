@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'character_dialog.dart';
+import 'gemini_service.dart';
 import 'models.dart';
 import 'prompt_builder.dart';
 import 'scenes_page.dart';
+import 'settings_page.dart';
 import 'storage.dart';
 
 void main() {
@@ -56,10 +58,16 @@ class _FlowIaPageState extends State<FlowIaPage> {
   PromptOption _camera = cameraOptions.first;
   PromptOption _lighting = lightingOptions[1];
 
+  bool _improving = false;
+  String? _improved;
+  String? _improvedSource;
+  int _usage = 0;
+
   @override
   void initState() {
     super.initState();
     _loadCharacters();
+    _loadUsage();
   }
 
   @override
@@ -68,6 +76,12 @@ class _FlowIaPageState extends State<FlowIaPage> {
     _actionController.dispose();
     _dialogueController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadUsage() async {
+    final usage = await _storage.loadTodayUsage();
+    if (!mounted) return;
+    setState(() => _usage = usage);
   }
 
   Future<void> _loadCharacters() async {
@@ -93,15 +107,48 @@ class _FlowIaPageState extends State<FlowIaPage> {
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
-  Future<void> _copy() async {
+  Future<void> _copy(String text) async {
     final messenger = ScaffoldMessenger.of(context);
-    await Clipboard.setData(ClipboardData(text: _prompt));
+    await Clipboard.setData(ClipboardData(text: text));
     _toast(messenger, 'Prompt copiado para a área de transferência!');
   }
 
-  Future<void> _saveScene() async {
+  Future<void> _improve() async {
     final messenger = ScaffoldMessenger.of(context);
-    final prompt = _prompt;
+    final key = await _storage.loadApiKey();
+    if (key.isEmpty) {
+      _toast(messenger, 'Cole sua chave do Gemini em Opções (engrenagem).');
+      return;
+    }
+    final model = await _storage.loadModel();
+    final base = _prompt;
+    if (!mounted) return;
+    setState(() => _improving = true);
+    try {
+      final service = GeminiService(apiKey: key, model: model);
+      final text = await service.generate(
+        system: improveSystemPrompt,
+        user: base,
+      );
+      await _storage.incrementUsage();
+      await _loadUsage();
+      if (!mounted) return;
+      setState(() {
+        _improved = text;
+        _improvedSource = base;
+      });
+    } on GeminiException catch (e) {
+      if (e.quotaId != null) {
+        await _storage.saveLearnedLimit('${e.quotaId} = ${e.quotaValue}');
+      }
+      _toast(messenger, e.message);
+    } finally {
+      if (mounted) setState(() => _improving = false);
+    }
+  }
+
+  Future<void> _saveScene(String prompt) async {
+    final messenger = ScaffoldMessenger.of(context);
     final title = _contextController.text.trim();
     final short = title.length > 40 ? '${title.substring(0, 40)}…' : title;
     final scenes = await _storage.loadScenes();
@@ -153,6 +200,13 @@ class _FlowIaPageState extends State<FlowIaPage> {
       _characters = items;
       _character = null;
     });
+  }
+
+  void _openSettings() {
+    Navigator.push(
+      context,
+      MaterialPageRoute<void>(builder: (_) => const SettingsPage()),
+    ).then((_) => _loadUsage());
   }
 
   void _openScenes() {
@@ -242,6 +296,91 @@ class _FlowIaPageState extends State<FlowIaPage> {
     );
   }
 
+  Widget _improveButton() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        FilledButton.tonalIcon(
+          onPressed: _improving ? null : _improve,
+          icon: _improving
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.auto_awesome),
+          label: Text(_improving ? 'Melhorando...' : 'Melhorar com IA'),
+          style: FilledButton.styleFrom(
+            minimumSize: const Size.fromHeight(48),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Text(
+            'Uso da IA hoje (neste app): $_usage',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _improvedCard() {
+    final improved = _improved;
+    if (improved == null || _improvedSource != _prompt) {
+      return const SizedBox.shrink();
+    }
+    final scheme = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 24),
+        Text(
+          'Prompt melhorado pela IA',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: scheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: scheme.primary),
+          ),
+          child: SelectableText(
+            improved,
+            style: const TextStyle(
+              fontFamily: 'monospace',
+              fontSize: 13,
+              height: 1.5,
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: FilledButton.tonalIcon(
+                onPressed: () => _copy(improved),
+                icon: const Icon(Icons.copy_rounded),
+                label: const Text('Copiar'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => _saveScene(improved),
+                icon: const Icon(Icons.playlist_add),
+                label: const Text('Salvar'),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -258,6 +397,11 @@ class _FlowIaPageState extends State<FlowIaPage> {
         ),
         centerTitle: true,
         actions: [
+          IconButton(
+            tooltip: 'Opções',
+            icon: const Icon(Icons.settings_outlined),
+            onPressed: _openSettings,
+          ),
           IconButton(
             tooltip: 'Cenas salvas',
             icon: const Icon(Icons.video_library_outlined),
@@ -366,7 +510,7 @@ class _FlowIaPageState extends State<FlowIaPage> {
             ),
             const SizedBox(height: 16),
             FilledButton.icon(
-              onPressed: _copy,
+              onPressed: () => _copy(_prompt),
               icon: const Icon(Icons.copy_rounded),
               label: const Text('Copiar Prompt'),
               style: FilledButton.styleFrom(
@@ -379,13 +523,16 @@ class _FlowIaPageState extends State<FlowIaPage> {
             ),
             const SizedBox(height: 12),
             OutlinedButton.icon(
-              onPressed: _saveScene,
+              onPressed: () => _saveScene(_prompt),
               icon: const Icon(Icons.playlist_add),
               label: const Text('Salvar na lista de cenas'),
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(48),
               ),
             ),
+            const SizedBox(height: 12),
+            _improveButton(),
+            _improvedCard(),
           ],
         ),
       ),
